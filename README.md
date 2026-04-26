@@ -58,17 +58,29 @@ We successfully trained an agent using Hugging Face TRL (PPO framework) to solve
 
 **Training Logs:** We have included the raw step-by-step metrics and reward outputs from our run in `train_metrics.json` for full transparency and reproducibility.
 
-### Learning Curve
-The agent progressively learned to navigate the API, getting its budget proposals approved and deploying interventions to reduce the city's temperature.
+### Phase 1: The Failure of Foundation Models (72B)
+Without a true world model, even massive 72B parameter models fail at this task. Because the agent must wait for budget approvals and factor in delayed physics, zero-shot models get trapped in repetitive loops.
+
+![72B Hallucination Loop](results/plot5_72b_loop_proof.png)
+*(Above: The "Loop of Death". The 72B model repeatedly queries the exact same API without ever advancing the environment state.)*
+
+### Phase 2: Training the 0.5B RL Agent
+We trained a tiny 0.5B model specifically to internalize the environment's dynamics. Over the training epochs, we can see the model transition from random exploration to consistent, high-reward behavior.
+
+![Training Progress Windows](results/plot4_progress_windows.png)
+*(Above: Breaking the training into windows shows the agent moving from low-reward exploration early on to consistent task completion.)*
+
+![Model Autonomy vs Curriculum Guidance](results/plot2_model_vs_guided.png)
+*(Above: Transitioning to Autonomy. As training progresses, autonomous "MODEL" actions completely overtake curriculum-guided actions.)*
 
 ![Learning Curve](results/plot1_learning_curve.png)
-*(Above: Average episode reward improving over training steps as the agent learns the environment dynamics.)*
+*(Above: The final learning curve showing the agent's episode reward steadily increasing as it navigates the Mayor's bottlenecks.)*
 
-### Model vs Baseline
-Our trained RL agent (0.5B parameters) successfully learned to outperform significantly larger foundation models (72B) by properly sequencing API calls and planning for long-horizon delays.
+### Phase 3: The Final Verdict
+By prioritizing a world model over sheer parameter count, our targeted 0.5B RL agent was able to completely dominate the generalized foundation model.
 
 ![Performance Comparison](results/plot6_rl_vs_72b_combined.png)
-*(Above: A comparison demonstrating the superiority of our targeted RL training approach versus zero-shot generalized models.)*
+*(Above: The 0.5B RL agent vs the 72B Zero-Shot Baseline. The ultimate proof that for structured planning, bigger isn't always smarter.)*
 
 ---
 

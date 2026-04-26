@@ -91,13 +91,31 @@ The MODEL is increasingly selecting `deploy_intervention` autonomously — the h
 
 ## Visualizing the Results
 
-**[We logged our training metrics](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise/blob/main/train_metrics.json)** to confirm that the agent isn't just getting lucky, but actively internalizing the mechanics of the Urban Heat simulation. The plots below clearly showcase this progression.
+**[We logged our training metrics](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise/blob/main/train_metrics.json)** to confirm that the agent isn't just getting lucky, but actively internalizing the mechanics of the Urban Heat simulation. 
 
-![RL Agent Learning Curve](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise/resolve/main/results/plot1_learning_curve.png)
-<br>**Fig 1. Learning Curve.** The agent's episode reward steadily increases as it learns to navigate bureaucratic bottlenecks (the Mayor) and deploy cooling interventions efficiently.
+### Phase 1: The Failure of Foundation Models (72B)
+Without a true world model, even massive 72B parameter models fail at this task. Because the agent must wait for budget approvals and factor in delayed physics, zero-shot models get trapped in repetitive loops.
+
+![72B Hallucination Loop](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise/resolve/main/results/plot5_72b_loop_proof.png)
+<br>**Fig 1. The "Loop of Death".** The 72B model repeatedly queries the exact same API without ever advancing the environment state.
+
+### Phase 2: Training the 0.5B RL Agent
+We trained a tiny 0.5B model specifically to internalize the environment's dynamics. Over the training epochs, we can see the model transition from random exploration to consistent, high-reward behavior.
+
+![Training Progress Windows](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise/resolve/main/results/plot4_progress_windows.png)
+<br>**Fig 2. Progress Over Time Windows.** Breaking the training into windows shows the agent moving from low-reward exploration early on to consistent task completion.
+
+![Model Autonomy vs Curriculum Guidance](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise/resolve/main/results/plot2_model_vs_guided.png)
+<br>**Fig 3. Transitioning to Autonomy.** As training progresses, autonomous "MODEL" actions completely overtake curriculum-guided actions.
+
+![Learning Curve](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise/resolve/main/results/plot1_learning_curve.png)
+<br>**Fig 4. Learning Curve.** The final learning curve showing the agent's episode reward steadily increasing as it navigates the Mayor's bottlenecks.
+
+### Phase 3: The Final Verdict
+By prioritizing a world model over sheer parameter count, our targeted 0.5B RL agent was able to completely dominate the generalized foundation model.
 
 ![RL Agent vs 72B Baseline](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise/resolve/main/results/plot6_rl_vs_72b_combined.png)
-<br>**Fig 2. The 0.5B RL Agent vs 72B Zero-Shot Baseline.** Generalized foundation models (72B) completely fail to execute long-horizon plans, achieving 0 scores. Our targeted, domain-specific 0.5B model excels by learning the environment's world model perfectly.
+<br>**Fig 5. The 0.5B RL Agent vs 72B Zero-Shot Baseline.** The ultimate proof that for structured planning, bigger isn't always smarter.
 
 > **Training Status:** Full 1000-epoch PPO training is running at submission time. Results will be updated in the README with reward curves and final task scores as training completes. The trajectory from epochs 0–216 already shows consistent improvement in MODEL-driven action selection.
 
