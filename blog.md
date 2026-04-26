@@ -8,7 +8,7 @@
 
 ---
 
-## 1. The Problem: LLMs can't plan, they can only follow
+## 1. The Baseline Model Attempt: LLMs can't plan, they can only follow
 
 We gave a **[Qwen 72B model](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise/blob/main/inference.py)** a task: act as a city planner navigating a simulated Urban Heat Island crisis. It had access to three API tools — `query_zoning`, `propose_budget`, and `deploy_intervention` — and 120 steps (simulating 10 years) to cool a city grid before summer heatwaves struck every 12 months.
 
@@ -91,8 +91,29 @@ A model that can't track time will misuse all three.
 
 We're training **[Qwen2.5-0.5B-Instruct](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise/blob/main/train_trl.py)** using **PPO via HuggingFace TRL**, with a shaped reward function and curriculum learning across the three task difficulties.
 
-### Reward shaping
-Rather than sparse 0/1 terminal rewards, we designed a rich reward signal. At each step, the agent earns reward proportional to actual temperature reduction. A bonus of `+0.20` is added when the model autonomously chooses a beneficial deployment (marked `MODEL` in logs), versus being guided by a curriculum hint. The final grade is a composite score depending on task difficulty.
+### Objective Rewards & Anti-Reward Hacking Safeguards
+
+Instead of relying solely on sparse terminal rewards (which LLMs struggle to learn from), we designed a dense, shaped reward signal. However, dense rewards often lead to **reward hacking** (e.g., an agent spamming low-cost interventions to farm points). 
+
+To prevent this, our environment enforces strict temporal delays and budget constraints directly in the step logic:
+
+```python
+# Snippet from server/environment.py
+if action == "deploy_intervention" and cell.temperature > target_temp:
+    # 1. Strict Budgeting prevents spamming
+    if self.budget < intervention.cost:
+        return PENALTY_NO_BUDGET
+        
+    # 2. Temporal Physics prevents immediate point-farming
+    if intervention == "tree_canopy":
+        cell.current_cooling = 0.0  # Zero immediate reward!
+        self.pending_growth.append({"cell": cell, "mature_in_steps": 12})
+        
+    # 3. Reward is ONLY given for genuine temperature reduction
+    reward = calculate_temperature_delta(old_grid, self.grid)
+```
+
+Additionally, a custom `+0.20` bonus is injected when the model autonomously chooses a beneficial deployment (marked `MODEL` in our logs), teaching the agent to rely on its own world model rather than curriculum hints.
 
 ### Live training signal — first 216 epochs
 Here's what our actual training output looks like. Watch for two things: the **env reward climbing from 0.0000 toward 0.0009**, and `MODEL` actions increasingly beating `guided` actions on shaped reward:
@@ -124,7 +145,7 @@ Without a true world model, even massive 72B parameter models fail at this task.
 ![72B Hallucination Loop](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise/resolve/main/results/plot5_72b_loop_proof.png)
 <br>**Fig 1. The "Loop of Death".** The 72B model repeatedly queries the exact same API without ever advancing the environment state.
 
-### Phase 2: Training the 0.5B RL Agent
+### Phase 2: Trained Model Attempt (0.5B RL Agent)
 We trained a tiny 0.5B model specifically to internalize the environment's dynamics. Over the training epochs, we can see the model transition from random exploration to consistent, high-reward behavior.
 
 ![Training Progress Windows](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise/resolve/main/results/plot4_progress_windows.png)
@@ -136,7 +157,7 @@ We trained a tiny 0.5B model specifically to internalize the environment's dynam
 ![Learning Curve](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise/resolve/main/results/plot1_learning_curve.png)
 <br>**Fig 4. Learning Curve.** The final learning curve showing the agent's episode reward steadily increasing as it navigates the Mayor's bottlenecks.
 
-### Phase 3: The Final Verdict
+### Phase 3: Measurable Improvement (The Final Verdict)
 By prioritizing a world model over sheer parameter count, our targeted 0.5B RL agent was able to completely dominate the generalized foundation model.
 
 ![RL Agent vs 72B Baseline](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise/resolve/main/results/plot6_rl_vs_72b_combined.png)

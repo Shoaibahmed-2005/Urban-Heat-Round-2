@@ -17,7 +17,7 @@ An intricately designed, multi-theme RL environment built on top of the **OpenEn
 ## 🚀 Hackathon Quick Links
 * **Hugging Face Space**: [Shoaibahmedsheriff/urban-heat-enterprise](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise)
 * **Training Script (Colab)**: [train_trl.ipynb](https://colab.research.google.com/github/Shoaibahmed-2005/Urban-Heat-Round-2/blob/main/train_trl.ipynb)
-* **Writeup/Blog Post**: [blog.md](blog.md) (Formatted for Hugging Face)
+* **Project Demo (Blog Format)**: [blog.md](blog.md) (Structured to follow the official 5-step demo rubric)
 * **Architecture Deep Dive**: See `project_handoff.md` for our full Hackathon strategy.
 
 ## 🌍 Motivation
@@ -48,6 +48,17 @@ The State consists of an 8x8 city grid where each cell has properties like surfa
 - `green_roof`: High immediate cooling, charges a 0.1 budget maintenance fee/step.
 - `reflective_surface`: Immediate cooling, completely degrades over 36 steps (3 years).
 - `tree_canopy`: Peak cooling, but starts at 0 and takes 12 steps (1 year) to fully mature.
+
+#### Anti-Reward Hacking
+To prevent the RL agent from spamming actions to farm points, the environment logic explicitly ties rewards to genuine state changes and enforces budget constraints:
+```python
+if action == "deploy_intervention":
+    if self.budget < intervention.cost:
+        return PENALTY_NO_BUDGET # Prevents action spam
+    if intervention == "tree_canopy":
+        cell.cooling = 0.0       # Forces long-horizon planning
+        self.growth_queue.append({"mature_in": 12})
+```
 
 ---
 
