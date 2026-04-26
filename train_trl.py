@@ -76,17 +76,29 @@ def format_env_prompt(state, epoch):
     budget = state.get("budget", 20)
     season = state.get("season", "Spring")
 
-    # Extract top 3 hottest cells from state grid if available
+    # Extract top 3 hottest cells - handles 2D list, flat list of dicts, or dict
     grid = state.get("grid", [])
     hot_cells = []
-    if grid:
-        for r, row in enumerate(grid):
-            for c, cell in enumerate(row):
-                temp = cell.get("temperature", 0) if isinstance(cell, dict) else 0
-                density = cell.get("population_density", 0) if isinstance(cell, dict) else 0
-                hot_cells.append((r, c, temp, density))
-        hot_cells.sort(key=lambda x: x[2], reverse=True)
-        hot_cells = hot_cells[:3]
+    try:
+        if isinstance(grid, list) and len(grid) > 0:
+            if isinstance(grid[0], list):
+                for r2, row_data in enumerate(grid):
+                    for c2, cell in enumerate(row_data):
+                        if isinstance(cell, dict):
+                            hot_cells.append((r2, c2, cell.get("temperature", 0), cell.get("population_density", 0)))
+            elif isinstance(grid[0], dict) and "row" in grid[0]:
+                for cell in grid:
+                    hot_cells.append((cell.get("row", 0), cell.get("col", 0), cell.get("temperature", 0), cell.get("population_density", 0)))
+        elif isinstance(grid, dict):
+            for key, cell in grid.items():
+                if isinstance(cell, dict):
+                    parts = str(key).replace("_", ",").split(",")
+                    r2, c2 = (int(parts[0]), int(parts[1])) if len(parts) == 2 else (0, 0)
+                    hot_cells.append((r2, c2, cell.get("temperature", 0), cell.get("population_density", 0)))
+    except Exception:
+        hot_cells = []
+    hot_cells.sort(key=lambda x: x[2], reverse=True)
+    hot_cells = hot_cells[:3]
 
     hot_str = ""
     if hot_cells:
@@ -164,22 +176,45 @@ def compute_shaped_reward(env_reward, parsed_action, response_text, state, epoch
         shaped += 0.05
 
     # Bonus: targeting a hot cell (top of grid)
+    # Safely handle whatever format the environment returns for grid:
+    #   - 2D list: grid[row][col] = {temperature, population_density}
+    #   - flat dict keyed by "row,col" strings: grid["2,3"] = {...}
+    #   - flat list of dicts with row/col fields
+    #   - anything else: skip bonuses silently
     grid = state.get("grid", [])
-    if grid and 0 <= row < len(grid) and 0 <= col < len(grid[0]):
-        cell = grid[row][col]
-        if isinstance(cell, dict):
-            temp    = cell.get("temperature", 0)
-            density = cell.get("population_density", 0)
+    cell = None
+    try:
+        if isinstance(grid, list) and len(grid) > 0:
+            first = grid[0]
+            if isinstance(first, list):
+                # True 2D list: grid[row][col]
+                if 0 <= row < len(grid) and 0 <= col < len(grid[row]):
+                    cell = grid[row][col]
+            elif isinstance(first, dict) and "row" in first:
+                # Flat list of dicts with row/col fields
+                for entry in grid:
+                    if entry.get("row") == row and entry.get("col") == col:
+                        cell = entry
+                        break
+        elif isinstance(grid, dict):
+            # Dict keyed by "row,col" string
+            cell = grid.get(f"{row},{col}") or grid.get(f"{row}_{col}")
+    except Exception:
+        cell = None
 
-            # Bonus for targeting high-temp cell
-            if temp > 36.0:
-                shaped += 0.08
-            elif temp > 34.0:
-                shaped += 0.04
+    if isinstance(cell, dict):
+        temp    = cell.get("temperature", 0)
+        density = cell.get("population_density", 0)
 
-            # Bonus for targeting high-density cell (needed for Mayor approval)
-            if task_id in ("protect_dense_zones", "full_mitigation") and density >= 0.4:
-                shaped += 0.08
+        # Bonus for targeting high-temp cell
+        if temp > 36.0:
+            shaped += 0.08
+        elif temp > 34.0:
+            shaped += 0.04
+
+        # Bonus for targeting high-density cell (needed for Mayor approval)
+        if task_id in ("protect_dense_zones", "full_mitigation") and density >= 0.4:
+            shaped += 0.08
 
     # Bonus: env actually gave positive reward (task making progress)
     if env_reward > 0.0:
