@@ -182,6 +182,20 @@ def main():
             
             action_str = f"{action_data['action_type']}_{action_data['intervention_type']}_{action_data['row']}_{action_data['col']}"
             
+            if step_idx == 0:
+                last_action_str = action_str
+                loop_counter = 0
+            else:
+                if action_str == last_action_str:
+                    loop_counter += 1
+                else:
+                    loop_counter = 0
+                last_action_str = action_str
+
+            if loop_counter >= 3:
+                print(f"[DEBUG] Model is stuck in a loop repeating '{action_str}'. Terminating early.", flush=True)
+                break
+            
             try:
                 obs = step_env(action_data)
                 reward = obs.get("reward", 0.0)

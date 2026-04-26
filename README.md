@@ -18,7 +18,7 @@ An intricately designed, multi-theme RL environment built on top of the **OpenEn
 * **Hugging Face Space**: [Shoaibahmedsheriff/urban-heat-enterprise](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise)
 * **Training Script (Colab)**: [train_trl.ipynb](https://colab.research.google.com/github/Shoaibahmed-2005/Urban-Heat-Round-2/blob/main/train_trl.ipynb)
 * **Demo Video**: [Insert YouTube Video Link Here] *(Judge note: Replace with actual URL)*
-* **Writeup/Blog Post**: [Insert Hugging Face Blog/Writeup Link Here] *(Judge note: Replace with actual URL)*
+* **Writeup/Blog Post**: [blog.md](blog.md) (Formatted for Hugging Face)
 * **Architecture Deep Dive**: See `project_handoff.md` for our full Hackathon strategy.
 
 ## 🌍 Motivation
@@ -55,6 +55,8 @@ The State consists of an 8x8 city grid where each cell has properties like surfa
 ## 📈 Training Evidence & Results
 
 We successfully trained an agent using Hugging Face TRL (PPO framework) to solve this complex bureaucratic and environmental puzzle. The training script (`train_trl.py` / `train_trl.ipynb`) connects to the FastAPI backend and trains an LLM to issue valid tool-call sequences.
+
+**Training Logs:** We have included the raw step-by-step metrics and reward outputs from our run in `train_metrics.json` for full transparency and reproducibility.
 
 ### Learning Curve
 The agent progressively learned to navigate the API, getting its budget proposals approved and deploying interventions to reduce the city's temperature.
@@ -120,9 +122,11 @@ python inference.py
 ```text
 urban_heat_env/
 ├── README.md             # Environment documentation
+├── blog.md               # Formatted Hugging Face blog post
 ├── models.py             # Action, Observation, State definitions
 ├── inference.py          # Baseline LLM inference script
 ├── train_trl.py          # RL Training using Hugging Face TRL
+├── train_metrics.json    # Raw RL training metrics and reward logs
 ├── dashboard.html        # Interactive visual dashboard
 ├── requirements.txt      # Python dependencies
 ├── Dockerfile            # Docker image definition

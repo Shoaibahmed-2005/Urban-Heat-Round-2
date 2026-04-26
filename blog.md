@@ -392,7 +392,7 @@
   <h2>1. The Problem: LLMs can't plan, they can only follow</h2>
 
   <p>
-    We gave a <strong>Qwen 72B model</strong> a task: act as a city planner navigating a simulated
+    We gave a <a href="https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise/blob/main/inference.py" style="color: var(--accent2); text-decoration: none; border-bottom: 1px dotted var(--accent2);"><strong>Qwen 72B model</strong></a> a task: act as a city planner navigating a simulated
     Urban Heat Island crisis. It had access to three API tools — <code>query_zoning</code>,
     <code>propose_budget</code>, and <code>deploy_intervention</code> — and 120 steps (simulating 10 years)
     to cool a city grid before summer heatwaves struck every 12 months.
@@ -442,7 +442,7 @@
   <h2>2. The Environment: A bureaucratic city simulator</h2>
 
   <p>
-    The <strong>Urban Heat Island Mitigation Planner</strong> is an 8×8 city grid where each 
+    The <a href="https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise/blob/main/server/environment.py" style="color: var(--accent2); text-decoration: none; border-bottom: 1px dotted var(--accent2);"><strong>Urban Heat Island Mitigation Planner</strong></a> is an 8×8 city grid where each 
     cell has a surface type, temperature, and population density. The environment simulates 
     10 years of urban climate policy — and it's deliberately hard.
   </p>
@@ -508,7 +508,7 @@
   <h2>3. Training: What the RL agent is learning</h2>
 
   <p>
-    We're training <strong>Qwen2.5-0.5B-Instruct</strong> using <strong>PPO via HuggingFace TRL</strong>,
+    We're training <a href="https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise/blob/main/train_trl.py" style="color: var(--accent2); text-decoration: none; border-bottom: 1px dotted var(--accent2);"><strong>Qwen2.5-0.5B-Instruct</strong></a> using <strong>PPO via HuggingFace TRL</strong>,
     with a shaped reward function and curriculum learning across the three task difficulties.
   </p>
 
@@ -549,7 +549,7 @@
   <!-- NEW SECTION: VISUALIZING THE RESULTS -->
   <h2>Visualizing the Results</h2>
   <p>
-    We logged our training metrics to confirm that the agent isn't just getting lucky, but actively 
+    <a href="https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise/blob/main/train_metrics.json" style="color: var(--accent2); text-decoration: none; border-bottom: 1px dotted var(--accent2);">We logged our training metrics</a> to confirm that the agent isn't just getting lucky, but actively 
     internalizing the mechanics of the Urban Heat simulation. The plots below clearly showcase this progression.
   </p>
 
