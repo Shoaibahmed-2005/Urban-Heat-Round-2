@@ -59,13 +59,13 @@ We successfully trained an agent using Hugging Face TRL (PPO framework) to solve
 ### Learning Curve
 The agent progressively learned to navigate the API, getting its budget proposals approved and deploying interventions to reduce the city's temperature.
 
-![Learning Curve](assets/plot1_learning_curve.png)
+![Learning Curve](results/plot1_learning_curve.png)
 *(Above: Average episode reward improving over training steps as the agent learns the environment dynamics.)*
 
 ### Model vs Baseline
 Our trained RL agent (0.5B parameters) successfully learned to outperform significantly larger foundation models (72B) by properly sequencing API calls and planning for long-horizon delays.
 
-![Performance Comparison](assets/plot6_rl_vs_72b_combined.png)
+![Performance Comparison](results/plot6_rl_vs_72b_combined.png)
 *(Above: A comparison demonstrating the superiority of our targeted RL training approach versus zero-shot generalized models.)*
 
 ---
@@ -127,7 +127,7 @@ urban_heat_env/
 ├── requirements.txt      # Python dependencies
 ├── Dockerfile            # Docker image definition
 ├── openenv.yaml          # OpenEnv configuration
-├── assets/               # Training plots and media
+├── results/              # Training plots and media
 ├── scripts/              # Utility scripts (plotters, updaters)
 └── server/
     ├── __init__.py
