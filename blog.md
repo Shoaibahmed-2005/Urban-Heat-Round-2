@@ -37,6 +37,31 @@ This environment simultaneously hits **three OpenEnv hackathon themes**:
 - **Theme 1: Long-Horizon Planning:** Tree canopies take 12 steps to mature. Reflective surfaces degrade after 36 steps. Heatwaves arrive every 12 steps. Timing is everything.
 - **3 Tasks: Curriculum Learning:** Easy: reduce average temp. Medium: protect dense zones. Hard: full city mitigation with population coverage scoring.
 
+### System Architecture & The "Mayor" Bottleneck
+
+To illustrate the complexity of the world model the agent must learn, here is the exact lifecycle of a single tool call:
+
+```mermaid
+graph TD
+    A[0.5B RL Agent] -->|1. JSON Tool Call| B(FastAPI OpenEnv Server)
+    B --> C{The "Mayor" Actor}
+    
+    C -->|Target Cell Density < 0.4| D[Proposal Rejected]
+    C -->|Target Cell Density >= 0.4| E[Budget Approved]
+    
+    D -->|Observation: Budget intact| F[Zero Reward]
+    E -->|Observation: Budget reduced| G[State Updates]
+    
+    G --> H((Physics Engine))
+    H -.->|12 Month Delay| I[Tree Canopy Matures]
+    H -.->|Immediate| J[Reflective Surface Cools]
+    
+    I --> K[Calculate Shaped Reward]
+    J --> K
+    F --> K
+    K -->|Feedback Loop| A
+```
+
 ### What the agent sees and does
 
 At each step, the agent receives the current city `state` — temperatures, densities, active interventions, budget remaining — and must decide which API tool to call next. Actions are submitted as JSON:
@@ -130,6 +155,14 @@ The Urban Heat Island environment is designed to be **resistant to shortcutting*
 If a model learns to score well here, it has *actually learned something about planning* — not just about how to format tool calls.
 
 And we believe that's what RL training should do: produce agents that model consequences, not just agents that follow instructions better.
+
+---
+
+## 5. Future Work & Scaling
+
+While our 0.5B parameter model successfully learned the core mechanics of the environment, we plan to push this research further by:
+1. **Scaling to 7B:** Applying this exact RL framework to larger open-weight models (like Llama-3-8B) to see if they can conquer the "Hard" difficulty task faster.
+2. **Dynamic Heatwaves:** Randomizing the interval of summer heatwaves so the agent must read the `next_heatwave_in` observation rather than relying on a static 12-step internalized clock.
 
 ---
 
