@@ -10,21 +10,31 @@ pinned: false
 # Urban Heat Island Mitigation Planner — Round 2
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Shoaibahmed-2005/Urban-Heat-Round-2/blob/main/train_trl.ipynb)
+[![Hugging Face Space](https://img.shields.io/badge/HF%20Space-Urban%20Heat%20Enterprise-blue)](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise)
 
-An intricately designed, multi-theme RL environment for the Meta × HuggingFace OpenEnv Hackathon.
+An intricately designed, multi-theme RL environment built on top of the **OpenEnv** framework for the Meta × HuggingFace OpenEnv Hackathon.
 
-## Overview
+## 🚀 Hackathon Quick Links
+* **Hugging Face Space**: [Shoaibahmedsheriff/urban-heat-enterprise](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise)
+* **Training Script (Colab)**: [train_trl.ipynb](https://colab.research.google.com/github/Shoaibahmed-2005/Urban-Heat-Round-2/blob/main/train_trl.ipynb)
+* **Demo Video**: [Insert YouTube Video Link Here] *(Judge note: Replace with actual URL)*
+* **Writeup/Blog Post**: [Insert Hugging Face Blog/Writeup Link Here] *(Judge note: Replace with actual URL)*
+* **Architecture Deep Dive**: See `project_handoff.md` for our full Hackathon strategy.
+
+## 🌍 Motivation
+
+Urban Heat Islands (UHIs) are metropolitan areas that are significantly warmer than their surrounding rural areas due to human activities. This excess heat leads to increased energy consumption, elevated emissions of air pollutants, and compromised human health. 
+
+Our environment simulates the complexities of mitigating UHIs at a city-planning scale. Planners cannot simply "place" cooling interventions everywhere. They must manage a constrained budget, navigate bureaucratic zoning policies, and account for long-term delays (e.g., waiting a year for a tree canopy to grow). By modeling this as a Reinforcement Learning problem, we can train AI agents to formulate optimal, multi-year strategic plans to cool down high-density populations efficiently.
+
+## ⚙️ How the Environment Works
 
 This environment perfectly encapsulates three core Hackathon themes:
-1. **World Modeling (Enterprise Workflows):** The agent must navigate simulated APIs (`query_zoning`, `propose_budget`, `deploy_intervention`) to get anything built. 
+1. **World Modeling (Enterprise Workflows):** The agent must navigate simulated APIs (`query_zoning`, `propose_budget`, `deploy_intervention`) to get anything built. Built natively on **OpenEnv**.
 2. **Multi-Agent Interactions:** Budget proposals are routed through a simulated "Mayor" actor who possesses hidden biases (e.g., rejecting projects not located in high-density areas).
 3. **Long-Horizon Planning:** The simulation runs for 120 steps representing 10 years. Interventions like `tree_canopy` take 12 months to grow, while `reflective_surface` degrades over 3 years. The agent must successfully prepare for "Summer Heatwaves" that spawn every 12 months.
 
-## Step-by-Step Guide
-
-### 1. Define Models
-
-The environment uses Python Pydantic models to define the State, Action, and Observation spaces (found in `models.py`).
+### State & Action Space
 
 **Action Space (API Tool Calling)**
 Actions are submitted as JSON requests to the environment:
@@ -35,79 +45,47 @@ Actions are submitted as JSON requests to the environment:
 **State & Observation**
 The State consists of an 8x8 city grid where each cell has properties like surface type, temperature, and population density. The environment also tracks global state such as budget, step count, active interventions, and proposals.
 
-### 2. Implement Environment & Reward Functions
-
-The core environment is implemented in `server/environment.py` and features the primary simulation methods: `reset()`, `step()`, and `state()`. 
-
-**Reward Functions and Tasks**
-
-The environment supports three distinct tasks, each with its own step reward shaping and final grading mechanics:
-
-1. **`reduce_avg_temp` (Easy)**
-   - **Step Reward:** The reduction in the average grid temperature compared to the previous step (only positive improvements are rewarded). This sparse-style reward encourages continuous temperature reduction.
-   - **Final Grade:** Scaled based on the total reduction of the average temperature over the baseline (max score achieved at a 2.0°C reduction).
-
-2. **`protect_dense_zones` (Medium)**
-   - **Step Reward:** The average temperature reduction across the top 5 most densely populated cells.
-   - **Final Grade:** The percentage of those top 5 high-density cells that were successfully cooled by at least 1.5°C.
-
-3. **`full_mitigation` (Hard)**
-   - **Step Reward:** The reduction in the average grid temperature compared to the previous step.
-   - **Final Grade:** A composite score weighting average temperature reduction (50%) and population coverage (50%). Population coverage measures the proportion of the city's total population living in cells cooled by at least 1.0°C.
-
-**Interventions**
+### Interventions & Dynamics
 - `green_roof`: High immediate cooling, charges a 0.1 budget maintenance fee/step.
 - `reflective_surface`: Immediate cooling, completely degrades over 36 steps (3 years).
 - `tree_canopy`: Peak cooling, but starts at 0 and takes 12 steps (1 year) to fully mature.
 
-### 3. Create FastAPI Server
+---
 
-The HTTP API is built using FastAPI (`server/app.py`). It exposes endpoints such as `/health`, `/reset`, `/step`, `/state`, and `/grade/{task_id}` to interact with the simulated city planner.
+## 📈 Training Evidence & Results
 
-### 4. Define Dependencies
+We successfully trained an agent using Hugging Face TRL (PPO framework) to solve this complex bureaucratic and environmental puzzle. The training script (`train_trl.py` / `train_trl.ipynb`) connects to the FastAPI backend and trains an LLM to issue valid tool-call sequences.
 
-Required dependencies for the environment are tracked in `requirements.txt`. They include:
-- `fastapi`
-- `uvicorn`
-- `pydantic`
-- `numpy`
-- `requests`
+### Learning Curve
+The agent progressively learned to navigate the API, getting its budget proposals approved and deploying interventions to reduce the city's temperature.
 
-### 5. Create Dockerfile
+![Learning Curve](assets/plot1_learning_curve.png)
+*(Above: Average episode reward improving over training steps as the agent learns the environment dynamics.)*
 
-A `Dockerfile` is provided at the root level to seamlessly containerize the FastAPI server and the environment, ensuring it runs identically across different environments and supports Hugging Face Spaces deployment out-of-the-box.
+### Model vs Baseline
+Our trained RL agent (0.5B parameters) successfully learned to outperform significantly larger foundation models (72B) by properly sequencing API calls and planning for long-horizon delays.
 
-### 6. Implement Client
+![Performance Comparison](assets/plot6_rl_vs_72b_combined.png)
+*(Above: A comparison demonstrating the superiority of our targeted RL training approach versus zero-shot generalized models.)*
 
-Clients interact with the environment by making HTTP POST/GET requests to the server's endpoints. Reference implementations of agents driving the environment can be found in our baseline LLM and RL training scripts (`inference.py` and `train_trl.py`).
+---
 
-## Building and Using Your Environment
+## 🛠️ Building and Using Your Environment
+
+This environment is fully compatible with the **OpenEnv standard** (see `openenv.yaml` for tasks and API routing).
 
 ### Setup and Local Execution
 
-<<<<<<< HEAD
-## OpenEnv Validation & Documentation
-This environment is fully compatible with the OpenEnv standard (see `openenv.yaml` for tasks and API routing).
-For Hackathon judges and mentors, please review `project_handoff.md` for a complete architecture overview and our "Triple Threat" hackathon strategy.
-
-## Setup
-=======
->>>>>>> 37bac00ae309dd9d91d8588635e31b31d3f47bda
 ```bash
 # Install dependencies (using pip or uv)
 pip install -r requirements.txt
+
 # Copy environment variables
 cp .env.example .env
 ```
 
-<<<<<<< HEAD
-## Running the Server & Dashboard
-
-### Local Execution
-=======
 ### Running the Server & Dashboard
 
->>>>>>> 37bac00ae309dd9d91d8588635e31b31d3f47bda
 ```bash
 # Start the simulation backend
 uvicorn server.app:app --host 0.0.0.0 --port 8000
@@ -115,7 +93,6 @@ uvicorn server.app:app --host 0.0.0.0 --port 8000
 # To view the visual dashboard, simply open dashboard.html in your browser!
 ```
 
-<<<<<<< HEAD
 ### Docker (Hugging Face Spaces)
 A `Dockerfile` is included for easy deployment. Note that the Docker image exposes port `7860`.
 ```bash
@@ -123,28 +100,22 @@ docker build -t urban-heat-env .
 docker run -p 7860:7860 urban-heat-env
 ```
 
-## Running RL Training 
+## 🧠 Running RL Training & Inference
+
 To verify our ability to solve this complex space, you can run the provided Hugging Face TRL PPO training script:
-=======
-### Running RL Training 
 
-To verify the ability to solve this complex space, you can run the provided Hugging Face TRL PPO training script:
-
->>>>>>> 37bac00ae309dd9d91d8588635e31b31d3f47bda
 ```bash
 python train_trl.py
 ```
 *(Note: Requires valid Hugging Face authentication if running outside of Colab)*
 
-### Running the Baseline LLM Inference
-
-We provide a baseline LLM inference script to interact with the environment using models like Qwen:
+We also provide a baseline LLM inference script to interact with the environment using models like Qwen:
 
 ```bash
 python inference.py
 ```
 
-## Project Structure
+## 📁 Project Structure
 
 ```text
 urban_heat_env/
@@ -155,6 +126,9 @@ urban_heat_env/
 ├── dashboard.html        # Interactive visual dashboard
 ├── requirements.txt      # Python dependencies
 ├── Dockerfile            # Docker image definition
+├── openenv.yaml          # OpenEnv configuration
+├── assets/               # Training plots and media
+├── scripts/              # Utility scripts (plotters, updaters)
 └── server/
     ├── __init__.py
     ├── environment.py    # Core CityGrid environment logic
