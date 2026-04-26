@@ -1,22 +1,152 @@
 name: urban-heat-env
 version: "1.0.0"
-description: "Urban Heat Island Mitigation Planner — an RL environment where an agent places cooling interventions on a city grid to reduce heat exposure"
+description: "Urban Heat Island Mitigation Planner — an RL environment where an agent navigates
+  simulated bureaucratic APIs (query_zoning, propose_budget, deploy_intervention) on an 8x8
+  city grid to reduce urban heat exposure across 3 difficulty levels."
 author: "Shoaibahmedsheriff"
+
+environment:
+  type: http
+  host: "0.0.0.0"
+  port: 7860
+  health_check: GET /health
+
 tasks:
   - id: reduce_avg_temp
     difficulty: easy
-    description: "Reduce the average grid temperature by at least 2°C"
+    description: "Reduce the average grid temperature by at least 2°C using cooling interventions"
+    max_steps: 120
+    reward_type: dense
+    success_threshold: 0.1
+
   - id: protect_dense_zones
     difficulty: medium
-    description: "Cool the 5 highest population-density cells by at least 1.5°C each"
+    description: "Cool the 5 highest population-density cells by at least 1.5°C each. Requires
+      Mayor approval via propose_budget — Mayor rejects proposals in low-density zones."
+    max_steps: 120
+    reward_type: dense
+    success_threshold: 0.1
+
   - id: full_mitigation
     difficulty: hard
-    description: "Composite score: temperature reduction, population coverage, and budget efficiency"
-api:
-  base_url: "${API_BASE_URL}"
-  model: "${MODEL_NAME}"
+    description: "Composite score weighted 50% average temperature reduction and 50% population
+      coverage. Population coverage measures proportion of city population living in cells
+      cooled by at least 1°C."
+    max_steps: 120
+    reward_type: dense
+    success_threshold: 0.1
+
+action_space:
+  type: json
+  actions:
+    - name: query_zoning
+      description: "Query zoning info for a cell before proposing budget"
+      parameters:
+        action_type:
+          type: string
+          const: "query_zoning"
+        row:
+          type: integer
+          minimum: 0
+          maximum: 7
+        col:
+          type: integer
+          minimum: 0
+          maximum: 7
+
+    - name: propose_budget
+      description: "Propose a budget to the Mayor for an intervention. Mayor rejects if
+        population_density < 0.4"
+      parameters:
+        action_type:
+          type: string
+          const: "propose_budget"
+        intervention_type:
+          type: string
+          enum: ["green_roof", "reflective_surface", "tree_canopy"]
+        row:
+          type: integer
+          minimum: 0
+          maximum: 7
+        col:
+          type: integer
+          minimum: 0
+          maximum: 7
+
+    - name: deploy_intervention
+      description: "Deploy a cooling intervention on a grid cell after budget is approved"
+      parameters:
+        action_type:
+          type: string
+          const: "deploy_intervention"
+        intervention_type:
+          type: string
+          enum: ["green_roof", "reflective_surface", "tree_canopy"]
+        row:
+          type: integer
+          minimum: 0
+          maximum: 7
+        col:
+          type: integer
+          minimum: 0
+          maximum: 7
+
+observation_space:
+  type: json
+  fields:
+    - name: grid
+      description: "8x8 city grid. Each cell has surface_type, temperature, population_density"
+    - name: budget
+      description: "Remaining budget for interventions"
+    - name: season
+      description: "Current season — heatwaves occur every Summer"
+    - name: next_heatwave_in
+      description: "Steps until next heatwave"
+    - name: active_interventions
+      description: "List of currently active interventions on the grid"
+    - name: proposals
+      description: "List of pending budget proposals"
+
+interventions:
+  - name: green_roof
+    effect: "High immediate cooling"
+    cost: "0.1 budget maintenance per step"
+  - name: reflective_surface
+    effect: "Immediate cooling, degrades completely after 36 steps (3 years)"
+    cost: "1.0 per deployment"
+  - name: tree_canopy
+    effect: "Peak cooling but takes 12 steps (1 year) to fully mature"
+    cost: "1.0 per deployment"
+
 endpoints:
-  reset: POST /reset
-  step: POST /step
-  state: GET /state
-  tasks: GET /tasks
+  health:  "GET  /health"
+  reset:   "POST /reset"
+  step:    "POST /step"
+  state:   "GET  /state"
+  tasks:   "GET  /tasks"
+  grade:   "GET  /grade/{task_id}"
+
+scoring:
+  reduce_avg_temp:
+    method: "Scale based on total average temperature reduction. Max score at 2.0°C reduction."
+  protect_dense_zones:
+    method: "Percentage of top 5 high-density cells cooled by at least 1.5°C"
+  full_mitigation:
+    method: "0.5 * avg_temp_reduction_score + 0.5 * population_coverage_score"
+
+training:
+  framework: "HuggingFace TRL (PPO)"
+  model: "Qwen/Qwen2.5-0.5B-Instruct"
+  epochs: 1000
+  script: "train_trl.py"
+  notebook: "train_trl.ipynb"
+
+baseline:
+  model: "Qwen/Qwen2.5-72B-Instruct"
+  script: "inference.py"
+  result: "Loops on query_zoning for 120 steps, scores 0.001 on all tasks"
+
+themes:
+  - "World Modeling — agent must navigate real bureaucratic API workflow"
+  - "Multi-Agent Interactions — Mayor actor with hidden density-based approval bias"
+  - "Long-Horizon Planning — 120 steps, intervention decay, seasonal heatwaves"
