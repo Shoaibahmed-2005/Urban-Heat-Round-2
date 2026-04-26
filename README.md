@@ -17,7 +17,6 @@ An intricately designed, multi-theme RL environment built on top of the **OpenEn
 ## 🚀 Hackathon Quick Links
 * **Hugging Face Space**: [Shoaibahmedsheriff/urban-heat-enterprise](https://huggingface.co/spaces/Shoaibahmedsheriff/urban-heat-enterprise)
 * **Training Script (Colab)**: [train_trl.ipynb](https://colab.research.google.com/github/Shoaibahmed-2005/Urban-Heat-Round-2/blob/main/train_trl.ipynb)
-* **Demo Video**: [Insert YouTube Video Link Here] *(Judge note: Replace with actual URL)*
 * **Writeup/Blog Post**: [blog.md](blog.md) (Formatted for Hugging Face)
 * **Architecture Deep Dive**: See `project_handoff.md` for our full Hackathon strategy.
 
